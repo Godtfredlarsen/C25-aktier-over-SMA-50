@@ -15,7 +15,7 @@ c25_aktier = [
 
 fundne_aktier = []
 
-print("Agenten analyserer C25 indekset...")
+print("Agenten analyserer C25 indekset for gårsdagens gennembrud...")
 
 # 2. Loop igennem alle aktier og tjek for SMA 50 kryds
 for aktie in c25_aktier:
@@ -28,14 +28,14 @@ for aktie in c25_aktier:
             
         data['SMA50'] = data['Close'].rolling(window=50).mean()
         
-        # Tjek de seneste 5 handelsdage (den seneste uge)
-        for i in range(-5, 0):
+        # Tjekker KUN den allersidste handelsdag (fra i går til i dag)
+        for i in range(-1, 0):
             forrige_luk = data['Close'].iloc[i-1]
             forrige_sma = data['SMA50'].iloc[i-1]
             aktuel_luk = data['Close'].iloc[i]
             aktuel_sma = data['SMA50'].iloc[i]
             
-            # Formel for at bryde OP over SMA 50
+            # Formel for om den netop er brudt OP over SMA 50
             if forrige_luk < forrige_sma and aktuel_luk > aktuel_sma:
                 dato_str = data.index[i].strftime('%d-%m-%Y')
                 fundne_aktier.append({
@@ -50,37 +50,36 @@ for aktie in c25_aktier:
 
 # 3. Opsætning af e-mail til One.com
 MIN_EMAIL = "mgl@godtfredlarsen.com"
-PASSWORD = os.environ.get("GMAIL_PASSWORD") # Denne henter koden automatisk fra GitHub Secrets
+PASSWORD = os.environ.get("GMAIL_PASSWORD") 
 SMTP_SERVER = "send.one.com" 
 
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "📊 C25 Agent: Ugentlig SMA 50 Rapport"
+msg['Subject'] = "📊 C25 Agent: Daglig SMA 50 Rapport"
 
 if fundne_aktier:
-    html = f"<h3>Aktie Rapport for mgl@godtfredlarsen.com</h3>"
-    html += "<p>Følgende aktier er i den seneste uge brudt <b>op over</b> deres 50 dages glidende gennemsnit (SMA 50):</p>"
+    html = f"<h3>Daglig Aktie Rapport for mgl@godtfredlarsen.com</h3>"
+    html += "<p>Følgende aktie(r) lavede et gennembrud og lukkede <b>op over</b> SMA 50 på seneste handelsdag:</p>"
     html += "<table border='1' cellpadding='5' style='border-collapse: collapse;'>"
-    html += "<tr style='background-color: #eee;'><th>Aktie</th><th>Lukkeskurs</th><th>SMA 50</th><th>Dato for brud</th></tr>"
+    html += "<tr style='background-color: #eee;'><th>Aktie</th><th>Lukkeskurs</th><th>SMA 50</th><th>Dato</th></tr>"
     for aktie in fundne_aktier:
         html += f"<tr><td><b>{aktie['navn']}</b></td><td>{aktie['kurs']} DKK</td><td>{aktie['sma']} DKK</td><td>{aktie['dato']}</td></tr>"
     html += "</table><br><p>Mvh,<br>Din automatiske C25 AI-Agent 🤖</p>"
 else:
-    html = "<h3>Aktie Rapport</h3><p>Ingen gennembrud over SMA 50 fundet i denne uge på C25-indekset.</p>"
+    html = "<h3>Daglig Aktie Rapport</h3><p>Ingen nye C25-aktier brød over SMA 50 på seneste handelsdag.</p>"
 
 msg.attach(MIMEText(html, 'html'))
 
 # 4. Afsendelse via One.com server
 if PASSWORD:
     try:
-        # Port 587 med STARTTLS fungerer perfekt med One.com
         server = smtplib.SMTP(SMTP_SERVER, 587)
         server.starttls()
         server.login(MIN_EMAIL, PASSWORD)
         server.sendmail(MIN_EMAIL, MIN_EMAIL, msg.as_string())
         server.quit()
-        print("Mail sendt med succes!")
+        print("Daglig mail sendt med succes!")
     except Exception as e:
         print(f"Kunne ikke sende mail: {e}")
 else:
