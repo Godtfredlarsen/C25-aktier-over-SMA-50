@@ -50,9 +50,10 @@ for aktie in c25_aktier:
     except Exception as e:
         print(f"Fejl ved behandling af {aktie}: {e}")
 
+# TILPASSET TIL MGL@GODTFREDLARSEN.COM (ONE.COM)
 MIN_EMAIL = "mgl@godtfredlarsen.com"
 PASSWORD = os.environ.get("GMAIL_PASSWORD") 
-SMTP_SERVER = "send.one.com" 
+SMTP_SERVER = "send.one.com"  # Tilbage til One.com serveren
 
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
@@ -61,14 +62,14 @@ msg['Subject'] = "📊 C25 Agent: Daglig SMA 50 Rapport"
 
 if fundne_aktier:
     html = f"<h3>Daglig Aktie Rapport for mgl@godtfredlarsen.com</h3>"
-    html += "<p>Følgende aktie(r) lukkese <b>op over</b> SMA 50 på seneste handelsdag:</p>"
+    html += "<p>Følgende aktie(r) lukkede <b>op over</b> SMA 50 på seneste handelsdag:</p>"
     html += "<table border='1' cellpadding='5' style='border-collapse: collapse;'>"
     html += "<tr style='background-color: #eee;'><th>Aktie</th><th>Lukkeskurs</th><th>SMA 50</th><th>Dato</th></tr>"
     for aktie in fundne_aktier:
         html += f"<tr><td><b>{aktie['navn']}</b></td><td>{aktie['kurs']} DKK</td><td>{aktie['sma']} DKK</td><td>{aktie['dato']}</td></tr>"
     html += "</table><br><p>Mvh,<br>Din automatiske C25 AI-Agent 🤖</p>"
 else:
-    html = "<h3>Daglig Aktie Rapport</h3><p>Ingen nye C25-aktier brød over SMA 50 på seneste tilgængelige handelsdag.</p>"
+    html = f"<h3>Daglig Aktie Rapport</h3><p>Ingen nye C25-aktier brød over SMA 50 på seneste tilgængelige handelsdag.</p>"
 
 msg.attach(MIMEText(html, 'html'))
 
@@ -79,8 +80,8 @@ if PASSWORD:
         server.login(MIN_EMAIL, PASSWORD)
         server.sendmail(MIN_EMAIL, MIN_EMAIL, msg.as_string())
         server.quit()
-        print("Daglig mail sendt med succes!")
+        print("Daglig mail sendt til mgl@godtfredlarsen.com med succes!")
     except Exception as e:
-        print(f"Kunne ikke sende mail via SMTP: {e}")
+        print(f"Kunne ikke sende mail via One.com SMTP: {e}")
 else:
     print("Fejl: Password blev ikke fundet i GitHub Secrets.")
