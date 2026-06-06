@@ -1,0 +1,29 @@
+name: Koer C25 Aktie Agent Dagligt
+
+on:
+  schedule:
+    # Kører mandag, tirsdag, onsdag, torsdag og fredag kl. 07:00 UTC
+    # (Det svarer til kl. 08:00 dansk vintertid / 09:00 sommertid)
+    - cron: '0 7 * * 1-5'
+  workflow_dispatch: # Gør at du stadig kan trykke på "Start" manuelt på GitHub for at teste
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hent koden fra Github
+        uses: actions/checkout@v4
+
+      - name: Saet Python op
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Installer pakker (yfinance og pandas)
+        run: |
+          pip install yfinance pandas
+
+      - name: Koer scriptet
+        env:
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+        run: python agent.py
