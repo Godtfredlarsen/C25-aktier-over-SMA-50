@@ -9,7 +9,7 @@ c25_aktier = [
     "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
     "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
     "MAERSK-A.CO", "MAERSK-B.CO", "NDA-DK.CO", "NOVO-B.CO",
-    "NZYM-B.CO", "ORSTED.CO", "PNDORA.CO", "ROCK-B.CO", "RY.CO",
+    "NZYM-B.CO", "ORSTED.CO", "PNDORA.CO", "ROCK-B.CO",
     "TRYG.CO", "VWS.CO", "ZEAL.CO"
 ]
 
@@ -50,32 +50,33 @@ for aktie in c25_aktier:
     except Exception as e:
         print(f"Fejl ved {aktie}: {e}")
 
-# ✅ EMAIL
+# ✅ DIN EMAIL
 MIN_EMAIL = "mgl@godtfredlarsen.com"
 
 # ✅ HENT PASSWORD FRA GITHUB
 PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
+# ✅ DEBUG
 print("PASSWORD FUNDEN:", PASSWORD is not None)
-
-SMTP_SERVER = "send.one.com"
 
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
 msg['Subject'] = "C25 SMA50 Rapport"
 
+# ✅ HTML indhold
 if fundne_aktier:
     html = "<h3>Signaler fundet</h3><ul>"
     for a in fundne_aktier:
-        html += f"<li>{a['navn']} - {a['kurs']}</li>"
+        html += f"<li>{a['navn']} - {a['kurs']} DKK</li>"
     html += "</ul>"
 else:
-    html = "<p>Ingen signaler</p>"
+    html = "<p>Ingen signaler i dag</p>"
 
 msg.attach(MIMEText(html, 'html'))
 
-if PASSWORD:
+# ✅ SEND MAIL (RET FEJL HER)
+if PASSWORD is not None and PASSWORD.strip() != "":
     try:
         server = smtplib.SMTP("send.one.com", 587)
         server.starttls()
