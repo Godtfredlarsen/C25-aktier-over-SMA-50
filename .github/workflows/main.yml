@@ -18,11 +18,10 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install
+      - name: Install packages
         run: pip install yfinance pandas
 
-      - name: Run
+      - name: Run script
         env:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: python agent.py
-``
