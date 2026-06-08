@@ -23,5 +23,5 @@ jobs:
 
       - name: Koer scriptet
         env:
-          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          GMAIL_PASSWORD: ${{ secrets.fedeabe987-Matuto1963 }}
         run: python agent.py
