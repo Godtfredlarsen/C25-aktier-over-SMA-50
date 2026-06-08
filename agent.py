@@ -77,8 +77,8 @@ if PASSWORD:
     try:
         server = smtplib.SMTP(SMTP_SERVER, 587)
         server.starttls()
-        server.login(MIN_EMAIL, PASSWORD)
-        server.sendmail(MIN_EMAIL, MIN_EMAIL, msg.as_string())
+        server.login(mgl@godtfredlarsen.com, fedeabe987-Matuto1963)
+        server.sendmail(mgl@godtfredlarsen.com, msg.as_string())
         server.quit()
         print("Daglig mail sendt til mgl@godtfredlarsen.com med succes!")
     except Exception as e:
