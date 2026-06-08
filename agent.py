@@ -52,7 +52,7 @@ for aktie in c25_aktier:
 
 # TILPASSET TIL MGL@GODTFREDLARSEN.COM (ONE.COM)
 MIN_EMAIL = "mgl@godtfredlarsen.com"
-PASSWORD = os.environ.get("GMAIL_PASSWORD") 
+PASSWORD = os.environ.get("fedeabe987-Matuto1963") 
 SMTP_SERVER = "send.one.com"  # Tilbage til One.com serveren
 
 msg = MIMEMultipart()
