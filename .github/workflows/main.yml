@@ -1,4 +1,4 @@
-name: Koer C25 Aktie Agent Dagligt
+name: Koer C25 Agent
 
 on:
   schedule:
@@ -10,20 +10,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Hent koden fra Github
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Saet Python op
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Installer pakker
-        run: |
-          pip install yfinance pandas
+      - name: Install packages
+        run: pip install yfinance pandas
 
-      - name: Koer scriptet
+      - name: Run script
         env:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_USER: mgl@godtfredlarsen.com
         run: python agent.py
