@@ -5,6 +5,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 
+print("VERSION OK")
+
 c25_aktier = [
     "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
     "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
@@ -43,40 +45,37 @@ for aktie in c25_aktier:
             fundne_aktier.append({
                 "navn": aktie.replace(".CO", ""),
                 "kurs": round(aktuel_luk, 2),
-                "sma": round(aktuel_sma, 2),
                 "dato": dato_str
             })
 
     except Exception as e:
         print(f"Fejl ved {aktie}: {e}")
 
-# ✅ DIN EMAIL
+# ✅ EMAIL
 MIN_EMAIL = "mgl@godtfredlarsen.com"
 
-# ✅ HENT PASSWORD FRA GITHUB
+# ✅ PASSWORD FRA GITHUB
 PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
-# ✅ DEBUG
-print("PASSWORD FUNDEN:", PASSWORD is not None)
+print("PASSWORD:", repr(PASSWORD))
 
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "C25 SMA50 Rapport"
+msg['Subject'] = "C25 SIGNALER"
 
-# ✅ HTML indhold
 if fundne_aktier:
-    html = "<h3>Signaler fundet</h3><ul>"
+    html = "<h3>Signaler</h3><ul>"
     for a in fundne_aktier:
-        html += f"<li>{a['navn']} - {a['kurs']} DKK</li>"
+        html += f"<li>{a['navn']} - {a['kurs']}</li>"
     html += "</ul>"
 else:
-    html = "<p>Ingen signaler i dag</p>"
+    html = "<p>Ingen signaler</p>"
 
 msg.attach(MIMEText(html, 'html'))
 
-# ✅ SEND MAIL (RET FEJL HER)
-if PASSWORD is not None and PASSWORD.strip() != "":
+# ✅ HER ER DEN KORREKTE CHECK (INGEN FEJL NU)
+if PASSWORD and PASSWORD.strip():
     try:
         server = smtplib.SMTP("send.one.com", 587)
         server.starttls()
@@ -87,4 +86,4 @@ if PASSWORD is not None and PASSWORD.strip() != "":
     except Exception as e:
         print("MAIL FEJL:", e)
 else:
-    print("PASSWORD MANGLER")
+    print("PASSWORD PROBLEM")
