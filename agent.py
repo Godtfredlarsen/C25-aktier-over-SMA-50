@@ -7,28 +7,38 @@ import os
 
 print("Agent starter...")
 
-c25_aktier = [
-    "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
-    "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
-    "MAERSK-A.CO", "MAERSK-B.CO", "NDA-DK.CO", "NOVO-B.CO",
-    "NZYM-B.CO", "ORSTED.CO", "PNDORA.CO", "ROCK-B.CO",
-    "TRYG.CO", "VWS.CO", "ZEAL.CO"
-]
+def hent_aktier():
+    try:
+        url = "https://www.investing.com/indices/omx-copenhagen-25-components"
+        tables = pd.read_html(url)
+        df = tables[0]
+
+        tickers = []
+
+        for navn in df['Name']:
+            navn = navn.upper()
+            navn = navn.replace(" ", "-")
+            navn = navn.replace(".", "")
+            ticker = f"{navn}.CO"
+
+            tickers.append(ticker)
+
+        return list(set(tickers))
+
+    except Exception as e:
+        print("Fejl ved hentning:", e)
+        return []
 
 over_ema50 = []
 købssignaler = []
 salgssignaler = []
 
-def calculate_rsi(data, window=14):
-    delta = data['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window).mean()
-    rs = gain / loss
-    return 100 - (100 / (1 + rs))
+print("Henter aktier...")
+aktier = hent_aktier()
 
 print("Analyserer...")
 
-for aktie in c25_aktier:
+for aktie in aktier:
     try:
         ticker = yf.Ticker(aktie)
         data = ticker.history(period="1y")
@@ -40,15 +50,6 @@ for aktie in c25_aktier:
         data['EMA50'] = data['Close'].ewm(span=50).mean()
         data['EMA100'] = data['Close'].ewm(span=100).mean()
 
-        # RSI
-        data['RSI'] = calculate_rsi(data)
-
-        # MACD
-        ema12 = data['Close'].ewm(span=12).mean()
-        ema26 = data['Close'].ewm(span=26).mean()
-        data['MACD'] = ema12 - ema26
-        data['Signal'] = data['MACD'].ewm(span=9).mean()
-
         last = data.tail(2)
 
         close_now = last['Close'].iloc[1]
@@ -58,32 +59,17 @@ for aktie in c25_aktier:
         ema50_prev = last['EMA50'].iloc[0]
         ema100_prev = last['EMA100'].iloc[0]
 
-        rsi = round(last['RSI'].iloc[1], 2)
-
-        macd_now = last['MACD'].iloc[1]
-        signal_now = last['Signal'].iloc[1]
-
-        macd_status = "Bullish" if macd_now > signal_now else "Bearish"
-
-        pe = ticker.info.get("trailingPE", "N/A")
-
         navn = aktie.replace(".CO", "")
 
-        # ✅ OVER EMA50
+        # ✅ Over EMA50
         if close_now > ema50_now:
-            over_ema50.append({
-                "navn": navn,
-                "kurs": round(close_now, 2),
-                "rsi": rsi,
-                "macd": macd_status,
-                "pe": pe
-            })
+            over_ema50.append(f"{navn} - {round(close_now,2)} DKK")
 
-        # ✅ KØBSSIGNAL (EMA50 krydser op)
+        # ✅ Købssignal
         if ema50_prev < ema100_prev and ema50_now > ema100_now and close_now > ema50_now:
             købssignaler.append(navn)
 
-        # ✅ SALGSSIGNAL (EMA50 krydser ned)
+        # ✅ Salgssignal
         if ema50_prev > ema100_prev and ema50_now < ema100_now:
             salgssignaler.append(navn)
 
@@ -97,14 +83,14 @@ PASSWORD = os.environ.get("EMAIL_PASSWORD")
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "📊 C25 Trading Signal"
+msg['Subject'] = "📊 C25 + Large Cap Signals"
 
 html = ""
 
 # 🔹 Over EMA50
 html += "<h3>Aktier OVER EMA50</h3><ul>"
 for a in over_ema50:
-    html += f"<li>{a['navn']} - {a['kurs']} DKK | RSI: {a['rsi']} | MACD: {a['macd']} | P/E: {a['pe']}</li>"
+    html += f"<li>{a}</li>"
 html += "</ul>"
 
 # 🔹 Køb
@@ -134,3 +120,4 @@ if PASSWORD and PASSWORD.strip():
         print("MAIL FEJL:", e)
 else:
     print("PASSWORD PROBLEM")
+``
