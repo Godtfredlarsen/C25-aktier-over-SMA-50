@@ -7,7 +7,6 @@ import os
 
 print("Agent starter...")
 
-# ✅ C25 liste
 c25_aktier = [
     "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
     "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
@@ -16,64 +15,109 @@ c25_aktier = [
     "TRYG.CO", "VWS.CO", "ZEAL.CO"
 ]
 
-fundne_aktier = []
+over_ema50 = []
+købssignaler = []
+salgssignaler = []
 
-print("Analyserer C25...")
+def calculate_rsi(data, window=14):
+    delta = data['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
+
+print("Analyserer...")
 
 for aktie in c25_aktier:
     try:
         ticker = yf.Ticker(aktie)
-        data = ticker.history(period="1y")  # ✅ 1 år
+        data = ticker.history(period="1y")
 
-        if data.empty or len(data) < 55:
+        if data.empty or len(data) < 100:
             continue
 
-        # ✅ Beregn SMA50
-        data['SMA50'] = data['Close'].rolling(50).mean()
+        # EMA
+        data['EMA50'] = data['Close'].ewm(span=50).mean()
+        data['EMA100'] = data['Close'].ewm(span=100).mean()
 
-        # ✅ Kun sidste 2 dage (seneste afsluttede dag)
+        # RSI
+        data['RSI'] = calculate_rsi(data)
+
+        # MACD
+        ema12 = data['Close'].ewm(span=12).mean()
+        ema26 = data['Close'].ewm(span=26).mean()
+        data['MACD'] = ema12 - ema26
+        data['Signal'] = data['MACD'].ewm(span=9).mean()
+
         last = data.tail(2)
 
-        forrige_luk = last['Close'].iloc[0]
-        aktuel_luk = last['Close'].iloc[1]
-        forrige_sma = last['SMA50'].iloc[0]
-        aktuel_sma = last['SMA50'].iloc[1]
+        close_now = last['Close'].iloc[1]
+        ema50_now = last['EMA50'].iloc[1]
+        ema100_now = last['EMA100'].iloc[1]
 
-        if pd.isna(forrige_sma) or pd.isna(aktuel_sma):
-            continue
+        ema50_prev = last['EMA50'].iloc[0]
+        ema100_prev = last['EMA100'].iloc[0]
 
-        # ✅ KUN breakout på sidste dag
-        if forrige_luk < forrige_sma and aktuel_luk > aktuel_sma:
-            dato = last.index[1].strftime('%d-%m-%Y')
+        rsi = round(last['RSI'].iloc[1], 2)
 
-            fundne_aktier.append({
-                "navn": aktie.replace(".CO", ""),
-                "kurs": round(aktuel_luk, 2),
-                "dato": dato
+        macd_now = last['MACD'].iloc[1]
+        signal_now = last['Signal'].iloc[1]
+
+        macd_status = "Bullish" if macd_now > signal_now else "Bearish"
+
+        pe = ticker.info.get("trailingPE", "N/A")
+
+        navn = aktie.replace(".CO", "")
+
+        # ✅ OVER EMA50
+        if close_now > ema50_now:
+            over_ema50.append({
+                "navn": navn,
+                "kurs": round(close_now, 2),
+                "rsi": rsi,
+                "macd": macd_status,
+                "pe": pe
             })
+
+        # ✅ KØBSSIGNAL (EMA50 krydser op)
+        if ema50_prev < ema100_prev and ema50_now > ema100_now and close_now > ema50_now:
+            købssignaler.append(navn)
+
+        # ✅ SALGSSIGNAL (EMA50 krydser ned)
+        if ema50_prev > ema100_prev and ema50_now < ema100_now:
+            salgssignaler.append(navn)
 
     except Exception as e:
         print(f"Fejl ved {aktie}: {e}")
 
-# ✅ EMAIL OPSÆTNING
+# ✅ EMAIL
 MIN_EMAIL = "mgl@godtfredlarsen.com"
 PASSWORD = os.environ.get("EMAIL_PASSWORD")
-
-print("PASSWORD:", repr(PASSWORD))
 
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "📊 C25 SMA50 Signal"
+msg['Subject'] = "📊 C25 Trading Signal"
 
-# ✅ Email indhold
-if fundne_aktier:
-    html = "<h3>Aktier der brød over SMA50 i dag:</h3><ul>"
-    for aktie in fundne_aktier:
-        html += f"<li>{aktie['navn']} - {aktie['kurs']} DKK ({aktie['dato']})</li>"
-    html += "</ul>"
-else:
-    html = "<p>Ingen aktier brød over SMA50 på seneste handelsdag.</p>"
+html = ""
+
+# 🔹 Over EMA50
+html += "<h3>Aktier OVER EMA50</h3><ul>"
+for a in over_ema50:
+    html += f"<li>{a['navn']} - {a['kurs']} DKK | RSI: {a['rsi']} | MACD: {a['macd']} | P/E: {a['pe']}</li>"
+html += "</ul>"
+
+# 🔹 Køb
+html += "<h3>📈 Købssignaler</h3><ul>"
+for a in købssignaler:
+    html += f"<li>{a}</li>"
+html += "</ul>"
+
+# 🔹 Salg
+html += "<h3>📉 Salgssignaler</h3><ul>"
+for a in salgssignaler:
+    html += f"<li>{a}</li>"
+html += "</ul>"
 
 msg.attach(MIMEText(html, 'html'))
 
