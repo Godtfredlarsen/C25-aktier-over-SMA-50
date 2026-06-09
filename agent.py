@@ -20,7 +20,6 @@ def hent_aktier():
             navn = navn.replace(" ", "-")
             navn = navn.replace(".", "")
             ticker = f"{navn}.CO"
-
             tickers.append(ticker)
 
         return list(set(tickers))
@@ -35,6 +34,7 @@ salgssignaler = []
 
 print("Henter aktier...")
 aktier = hent_aktier()
+print(f"Antal aktier: {len(aktier)}")
 
 print("Analyserer...")
 
@@ -46,7 +46,7 @@ for aktie in aktier:
         if data.empty or len(data) < 100:
             continue
 
-        # EMA
+        # EMA beregning
         data['EMA50'] = data['Close'].ewm(span=50).mean()
         data['EMA100'] = data['Close'].ewm(span=100).mean()
 
@@ -63,7 +63,7 @@ for aktie in aktier:
 
         # ✅ Over EMA50
         if close_now > ema50_now:
-            over_ema50.append(f"{navn} - {round(close_now,2)} DKK")
+            over_ema50.append(f"{navn} - {round(close_now, 2)} DKK")
 
         # ✅ Købssignal
         if ema50_prev < ema100_prev and ema50_now > ema100_now and close_now > ema50_now:
@@ -76,7 +76,7 @@ for aktie in aktier:
     except Exception as e:
         print(f"Fejl ved {aktie}: {e}")
 
-# ✅ EMAIL
+# ✅ EMAIL OPSÆTNING
 MIN_EMAIL = "mgl@godtfredlarsen.com"
 PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
@@ -93,13 +93,13 @@ for a in over_ema50:
     html += f"<li>{a}</li>"
 html += "</ul>"
 
-# 🔹 Køb
+# 🔹 Købssignaler
 html += "<h3>📈 Købssignaler</h3><ul>"
 for a in købssignaler:
     html += f"<li>{a}</li>"
 html += "</ul>"
 
-# 🔹 Salg
+# 🔹 Salgssignaler
 html += "<h3>📉 Salgssignaler</h3><ul>"
 for a in salgssignaler:
     html += f"<li>{a}</li>"
@@ -107,7 +107,7 @@ html += "</ul>"
 
 msg.attach(MIMEText(html, 'html'))
 
-# ✅ Send mail
+# ✅ SEND MAIL
 if PASSWORD and PASSWORD.strip():
     try:
         server = smtplib.SMTP("send.one.com", 587)
@@ -120,4 +120,3 @@ if PASSWORD and PASSWORD.strip():
         print("MAIL FEJL:", e)
 else:
     print("PASSWORD PROBLEM")
-``
