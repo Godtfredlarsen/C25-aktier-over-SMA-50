@@ -7,34 +7,18 @@ import os
 
 print("Agent starter...")
 
-def hent_aktier():
-    try:
-        url = "https://www.investing.com/indices/omx-copenhagen-25-components"
-        tables = pd.read_html(url)
-        df = tables[0]
-
-        tickers = []
-
-        for navn in df['Name']:
-            navn = navn.upper()
-            navn = navn.replace(" ", "-")
-            navn = navn.replace(".", "")
-            ticker = f"{navn}.CO"
-            tickers.append(ticker)
-
-        return list(set(tickers))
-
-    except Exception as e:
-        print("Fejl ved hentning:", e)
-        return []
+# ✅ KORREKT C25 LISTE
+aktier = [
+    "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
+    "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
+    "MAERSK-A.CO", "MAERSK-B.CO", "NDA-DK.CO", "NOVO-B.CO",
+    "NZYM-B.CO", "ORSTED.CO", "PNDORA.CO", "ROCK-B.CO",
+    "TRYG.CO", "VWS.CO", "ZEAL.CO"
+]
 
 over_ema50 = []
 købssignaler = []
 salgssignaler = []
-
-print("Henter aktier...")
-aktier = hent_aktier()
-print(f"Antal aktier: {len(aktier)}")
 
 print("Analyserer...")
 
@@ -46,7 +30,7 @@ for aktie in aktier:
         if data.empty or len(data) < 100:
             continue
 
-        # EMA beregning
+        # ✅ EMA
         data['EMA50'] = data['Close'].ewm(span=50).mean()
         data['EMA100'] = data['Close'].ewm(span=100).mean()
 
@@ -61,29 +45,29 @@ for aktie in aktier:
 
         navn = aktie.replace(".CO", "")
 
-        # ✅ Over EMA50
+        # ✅ OVER EMA50 (din vigtigste liste)
         if close_now > ema50_now:
             over_ema50.append(f"{navn} - {round(close_now, 2)} DKK")
 
-        # ✅ Købssignal
-        if ema50_prev < ema100_prev and ema50_now > ema100_now and close_now > ema50_now:
+        # ✅ KØBSSIGNAL (kryds op)
+        if ema50_prev < ema100_prev and ema50_now > ema100_now:
             købssignaler.append(navn)
 
-        # ✅ Salgssignal
+        # ✅ SALGSSIGNAL (kryds ned)
         if ema50_prev > ema100_prev and ema50_now < ema100_now:
             salgssignaler.append(navn)
 
     except Exception as e:
         print(f"Fejl ved {aktie}: {e}")
 
-# ✅ EMAIL OPSÆTNING
+# ✅ EMAIL
 MIN_EMAIL = "mgl@godtfredlarsen.com"
 PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "📊 C25 + Large Cap Signals"
+msg['Subject'] = "📊 C25 EMA Signals"
 
 html = ""
 
@@ -93,13 +77,13 @@ for a in over_ema50:
     html += f"<li>{a}</li>"
 html += "</ul>"
 
-# 🔹 Købssignaler
+# 🔹 Køb
 html += "<h3>📈 Købssignaler</h3><ul>"
 for a in købssignaler:
     html += f"<li>{a}</li>"
 html += "</ul>"
 
-# 🔹 Salgssignaler
+# 🔹 Salg
 html += "<h3>📉 Salgssignaler</h3><ul>"
 for a in salgssignaler:
     html += f"<li>{a}</li>"
