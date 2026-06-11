@@ -12,7 +12,7 @@ aktier = [
     "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
     "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
     "MAERSK-A.CO", "MAERSK-B.CO", "NDA-DK.CO", "NOVO-B.CO",
-    "NZYM-B.CO", "ORSTED.CO", "PNDORA.CO", "ROCK-B.CO",
+    "NSIS-B.CO", "ORSTED.CO", "PNDORA.CO", "ROCK-B.CO",
     "TRYG.CO", "VWS.CO", "ZEAL.CO"
 ]
 
