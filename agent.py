@@ -7,7 +7,7 @@ import os
 
 print("Agent starter...")
 
-# ✅ KORREKT C25 LISTE
+# ✅ C25 liste (korrekt tickers)
 aktier = [
     "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
     "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
@@ -17,8 +17,6 @@ aktier = [
 ]
 
 over_ema50 = []
-købssignaler = []
-salgssignaler = []
 
 print("Analyserer...")
 
@@ -30,32 +28,20 @@ for aktie in aktier:
         if data.empty or len(data) < 100:
             continue
 
-        # ✅ EMA
+        # ✅ EMA50
         data['EMA50'] = data['Close'].ewm(span=50).mean()
-        data['EMA100'] = data['Close'].ewm(span=100).mean()
 
-        last = data.tail(2)
+        # ✅ Brug KUN sidste afsluttede dag
+        last = data.tail(1)
 
-        close_now = last['Close'].iloc[1]
-        ema50_now = last['EMA50'].iloc[1]
-        ema100_now = last['EMA100'].iloc[1]
-
-        ema50_prev = last['EMA50'].iloc[0]
-        ema100_prev = last['EMA100'].iloc[0]
+        close_now = last['Close'].iloc[0]
+        ema50_now = last['EMA50'].iloc[0]
 
         navn = aktie.replace(".CO", "")
 
-        # ✅ OVER EMA50 (din vigtigste liste)
+        # ✅ Køb = kurs over EMA50
         if close_now > ema50_now:
             over_ema50.append(f"{navn} - {round(close_now, 2)} DKK")
-
-        # ✅ KØBSSIGNAL (kryds op)
-        if ema50_prev < ema100_prev and ema50_now > ema100_now:
-            købssignaler.append(navn)
-
-        # ✅ SALGSSIGNAL (kryds ned)
-        if ema50_prev > ema100_prev and ema50_now < ema100_now:
-            salgssignaler.append(navn)
 
     except Exception as e:
         print(f"Fejl ved {aktie}: {e}")
@@ -67,27 +53,16 @@ PASSWORD = os.environ.get("EMAIL_PASSWORD")
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "📊 C25 EMA Signals"
+msg['Subject'] = "📊 C25 EMA50 Status"
 
-html = ""
-
-# 🔹 Over EMA50
-html += "<h3>Aktier OVER EMA50</h3><ul>"
-for a in over_ema50:
-    html += f"<li>{a}</li>"
-html += "</ul>"
-
-# 🔹 Køb
-html += "<h3>📈 Købssignaler</h3><ul>"
-for a in købssignaler:
-    html += f"<li>{a}</li>"
-html += "</ul>"
-
-# 🔹 Salg
-html += "<h3>📉 Salgssignaler</h3><ul>"
-for a in salgssignaler:
-    html += f"<li>{a}</li>"
-html += "</ul>"
+# ✅ Email indhold (ALTID sendt)
+if over_ema50:
+    html = "<h3>Aktier OVER EMA50</h3><ul>"
+    for a in over_ema50:
+        html += f"<li>{a}</li>"
+    html += "</ul>"
+else:
+    html = "<p>Ingen aktier er over EMA50.</p>"
 
 msg.attach(MIMEText(html, 'html'))
 
