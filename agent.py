@@ -7,7 +7,7 @@ import os
 
 print("Agent starter...")
 
-# ✅ C25 liste (rettet NZYM → NSIS)
+# ✅ C25 liste
 aktier = [
     "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
     "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
@@ -20,6 +20,7 @@ over_ema50 = []
 
 print("Analyserer...")
 
+# ✅ RSI funktion
 def calculate_rsi(data, window=14):
     delta = data['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window).mean()
@@ -75,7 +76,7 @@ for aktie in aktier:
         # ✅ Kurs over EMA50
         if close_now > ema50_now:
             over_ema50.append(
-                f"{navn} - {round(close_now, 2)} DKK | RSI: {rsi_status} | MACD: {macd_status}"
+                f"{navn:<10} {round(close_now,1):>8} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
             )
 
     except Exception as e:
@@ -90,12 +91,12 @@ msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
 msg['Subject'] = "📊 C25 EMA50 Status"
 
-# ✅ Email indhold
+# ✅ HTML (monospace → pæne kolonner)
 if over_ema50:
-    html = "<h3>Aktier OVER EMA50</h3><ul>"
+    html = "<h3>Aktier OVER EMA50</h3><pre>"
     for a in over_ema50:
-        html += f"<li>{a}</li>"
-    html += "</ul>"
+        html += a + "\n"
+    html += "</pre>"
 else:
     html = "<p>Ingen aktier er over EMA50.</p>"
 
