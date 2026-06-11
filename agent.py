@@ -7,7 +7,7 @@ import os
 
 print("Agent starter...")
 
-# ✅ C25 liste (korrekt tickers)
+# ✅ C25 liste (rettet NZYM → NSIS)
 aktier = [
     "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
     "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
@@ -20,6 +20,13 @@ over_ema50 = []
 
 print("Analyserer...")
 
+def calculate_rsi(data, window=14):
+    delta = data['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
+
 for aktie in aktier:
     try:
         ticker = yf.Ticker(aktie)
@@ -28,20 +35,48 @@ for aktie in aktier:
         if data.empty or len(data) < 100:
             continue
 
-        # ✅ EMA50
+        # ✅ EMA
         data['EMA50'] = data['Close'].ewm(span=50).mean()
 
-        # ✅ Brug KUN sidste afsluttede dag
+        # ✅ RSI
+        data['RSI'] = calculate_rsi(data)
+
+        # ✅ MACD
+        ema12 = data['Close'].ewm(span=12).mean()
+        ema26 = data['Close'].ewm(span=26).mean()
+        data['MACD'] = ema12 - ema26
+        data['Signal'] = data['MACD'].ewm(span=9).mean()
+
+        # ✅ Seneste afsluttede dag
         last = data.tail(1)
 
         close_now = last['Close'].iloc[0]
         ema50_now = last['EMA50'].iloc[0]
+        rsi_now = last['RSI'].iloc[0]
+        macd_now = last['MACD'].iloc[0]
+        signal_now = last['Signal'].iloc[0]
 
         navn = aktie.replace(".CO", "")
 
-        # ✅ Køb = kurs over EMA50
+        # ✅ RSI status
+        if rsi_now < 30:
+            rsi_status = "Oversolgt"
+        elif rsi_now > 70:
+            rsi_status = "Overkøbt"
+        else:
+            rsi_status = "Neutral"
+
+        # ✅ MACD status
+        if macd_now > signal_now:
+            macd_status = "Bullish"
+        else:
+            macd_status = "Bearish"
+
+        # ✅ Kurs over EMA50
         if close_now > ema50_now:
-            over_ema50.append(f"{navn} - {round(close_now, 2)} DKK")
+            over_ema50.append(
+                f"{navn} - {round(close_now, 2)} DKK | RSI: {rsi_status} | MACD: {macd_status}"
+            )
 
     except Exception as e:
         print(f"Fejl ved {aktie}: {e}")
@@ -55,7 +90,7 @@ msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
 msg['Subject'] = "📊 C25 EMA50 Status"
 
-# ✅ Email indhold (ALTID sendt)
+# ✅ Email indhold
 if over_ema50:
     html = "<h3>Aktier OVER EMA50</h3><ul>"
     for a in over_ema50:
