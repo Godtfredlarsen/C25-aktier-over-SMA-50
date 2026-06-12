@@ -1,54 +1,22 @@
-import yfinance as yf
 import pandas as pd
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+import requests
 
 print("Agent starter...")
 
-# ✅ C25 liste
+# ✅ Aktieliste
 aktier = [
-"ALMB.CO",
-"BAVA.CO",
-"CARL-B.CO",
-"COLO-B.CO",
-"DANSKE.CO",
-"DEMANT.CO",
-"DSV.CO",
-"FLS.CO",
-"GENMAB.CO",
-"GN.CO",
-"ISS.CO",
-"JYSK.CO",
-"MAERSK-A.CO",
-"MAERSK-B.CO",
-"NKT.CO",
-"NOVO-B.CO",
-"NOVOZ.CO",
-"ORSTED.CO",
-"PNDORA.CO",
-"RBREW.CO",
-"ROCK-B.CO",
-"SYDB.CO",
-"TRYG.CO",
-"VWS.CO",
-"ZEAL.CO",
-"ALK-B.CO",
-"BIOPOR.CO",
-"BO.CO",
-"CHEMM.CO",
-"DFDS.CO",
-"GREENM.CO",
-"HAFNI.CO",
-"MATAS.CO",
-"NETC.CO",
-"RING.CO",
-"SPNO.CO",
-"STG.CO",
-"TOP.CO",
-"TORM.CO"
+"ALMB.CO","BAVA.CO","CARL-B.CO","COLO-B.CO","DANSKE.CO","DEMANT.CO",
+"DSV.CO","FLS.CO","GENMAB.CO","GN.CO","ISS.CO","JYSK.CO",
+"MAERSK-A.CO","MAERSK-B.CO","NKT.CO","NOVO-B.CO","NOVOZ.CO","ORSTED.CO",
+"PNDORA.CO","RBREW.CO","ROCK-B.CO","SYDB.CO","TRYG.CO","VWS.CO","ZEAL.CO",
+"ALK-B.CO","BIOPOR.CO","BO.CO","CHEMM.CO","DFDS.CO","GREENM.CO","HAFNI.CO",
+"MATAS.CO","NETC.CO","RING.CO","SPNO.CO","STG.CO","TOP.CO","TORM.CO"
 ]
+
 over_ema50 = []
 
 print("Analyserer...")
@@ -61,27 +29,58 @@ def calculate_rsi(data, window=14):
     rs = gain / loss
     return 100 - (100 / (1 + rs))
 
+# ✅ Nordnet data
+def hent_data(aktie):
+    try:
+        symbol = aktie.replace(".CO", "")
+        url = f"https://www.nordnet.dk/api/2/main_search?query={symbol}"
+        r = requests.get(url)
+        if r.status_code != 200:
+            return None
+
+        data = r.json()
+        if "results" not in data or not data["results"]:
+            return None
+
+        instrument_id = data["results"][0]["id"]
+
+        hist_url = f"https://www.nordnet.dk/api/2/ins/price/chart/{instrument_id}?resolution=day&from=0&to=9999999999"
+        r2 = requests.get(hist_url)
+        if r2.status_code != 200:
+            return None
+
+        hist = r2.json()
+        if "candles" not in hist:
+            return None
+
+        df = pd.DataFrame(hist["candles"])
+        df.columns = ["timestamp", "Open", "High", "Low", "Close", "Volume"]
+
+        return df
+
+    except:
+        return None
+
+# ✅ LOOP
 for aktie in aktier:
     try:
-        ticker = yf.Ticker(aktie)
-        data = ticker.history(period="1y")
+        data = hent_data(aktie)
 
-        if data.empty or len(data) < 100:
+        if data is None or data.empty or len(data) < 100:
             continue
 
         # ✅ EMA
-        data['EMA50'] = data['Close'].ewm(span=50).mean()
+        data['EMA50'] = data['Close'].ewm(span=50, adjust=False).mean()
 
         # ✅ RSI
         data['RSI'] = calculate_rsi(data)
 
         # ✅ MACD
-        ema12 = data['Close'].ewm(span=12).mean()
-        ema26 = data['Close'].ewm(span=26).mean()
+        ema12 = data['Close'].ewm(span=12, adjust=False).mean()
+        ema26 = data['Close'].ewm(span=26, adjust=False).mean()
         data['MACD'] = ema12 - ema26
-        data['Signal'] = data['MACD'].ewm(span=9).mean()
+        data['Signal'] = data['MACD'].ewm(span=9, adjust=False).mean()
 
-        # ✅ Seneste afsluttede dag
         last = data.tail(1)
 
         close_now = last['Close'].iloc[0]
@@ -89,6 +88,9 @@ for aktie in aktier:
         rsi_now = last['RSI'].iloc[0]
         macd_now = last['MACD'].iloc[0]
         signal_now = last['Signal'].iloc[0]
+
+        if pd.isna(rsi_now):
+            continue
 
         navn = aktie.replace(".CO", "")
 
@@ -106,7 +108,7 @@ for aktie in aktier:
         else:
             macd_status = "Bearish"
 
-        # ✅ Kurs over EMA50
+        # ✅ FILTER
         if close_now > ema50_now:
             over_ema50.append(
                 f"{navn:<10} {round(close_now,1):>8} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
@@ -124,7 +126,7 @@ msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
 msg['Subject'] = "📊 C25 EMA50 Status"
 
-# ✅ HTML (monospace → pæne kolonner)
+# ✅ HTML
 if over_ema50:
     html = "<h3>Aktier OVER EMA50</h3><pre>"
     for a in over_ema50:
