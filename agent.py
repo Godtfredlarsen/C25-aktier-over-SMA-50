@@ -7,41 +7,15 @@ import os
 
 print("Agent starter...")
 
-# ✅ KORREKTE Yahoo Finance tickers
+# ✅ Yahoo tickers
 aktier = [
-"ALMB.CO",
-"BAVA.CO",
-"CARL-B.CO",
-"COLO-B.CO",
-"DANSKE.CO",
-"DEMANT.CO",
-"DSV.CO",
-"FLS.CO",
-"GMAB.CO",
-"GN.CO",
-"ISS.CO",
-"MAERSK-A.CO",
-"MAERSK-B.CO",
-"NKT.CO",
-"NOVO-B.CO",
-"NOVOZ.CO",
-"ORSTED.CO",
-"PNDORA.CO",
-"RBREW.CO",
-"ROCK-B.CO",
-"SYDB.CO",
-"TRYG.CO",
-"VWS.CO",
-"ZEAL.CO",
-"ALK-B.CO",
-"DFDS.CO",
-"HAFNI.CO",
-"MATAS.CO",
-"NETC.CO",
-"RILBA.CO",   # Ringkjøbing Landbobank
-"STG.CO",
-"TOP.CO",
-"TORM.CO"
+"ALMB.CO","BAVA.CO","CARL-B.CO","COLO-B.CO","DANSKE.CO","DEMANT.CO",
+"DSV.CO","FLS.CO","GMAB.CO","GN.CO","ISS.CO",
+"MAERSK-A.CO","MAERSK-B.CO","NKT.CO","NOVO-B.CO","NOVOZ.CO",
+"ORSTED.CO","PNDORA.CO","RBREW.CO","ROCK-B.CO",
+"SYDB.CO","TRYG.CO","VWS.CO","ZEAL.CO",
+"ALK-B.CO","DFDS.CO","HAFNI.CO","MATAS.CO","NETC.CO",
+"RILBA.CO","STG.CO","TOP.CO","TORM.CO"
 ]
 
 over_ema50 = []
@@ -63,10 +37,10 @@ for aktie in aktier:
         data = ticker.history(period="1y")
 
         if data.empty or len(data) < 100:
-            print(f"Ingen data: {aktie}")
+            print("Ingen data:", aktie)
             continue
 
-        # ✅ EMA
+        # ✅ EMA50
         data['EMA50'] = data['Close'].ewm(span=50, adjust=False).mean()
 
         # ✅ RSI
@@ -107,12 +81,16 @@ for aktie in aktier:
 
         # ✅ FILTER
         if close_now > ema50_now:
-            over_ema50.append(
-                f"{navn:<10} {round(close_now,1):>8} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
+            linje = (
+                f"{navn:<10} "
+                f"{round(close_now,1):>8} DKK   "
+                f"RSI: {rsi_status:<10}   "
+                f"MACD: {macd_status}"
             )
+            over_ema50.append(linje)
 
     except Exception as e:
-        print(f"Fejl ved {aktie}: {e}")
+        print("Fejl ved", aktie, ":", e)
 
 # ✅ EMAIL
 MIN_EMAIL = "mgl@godtfredlarsen.com"
@@ -147,4 +125,3 @@ if PASSWORD and PASSWORD.strip():
         print("MAIL FEJL:", e)
 else:
     print("PASSWORD PROBLEM")
-``
