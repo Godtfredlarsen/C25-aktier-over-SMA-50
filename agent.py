@@ -7,14 +7,13 @@ import requests
 
 print("Agent starter...")
 
-# ✅ Aktieliste
+# ✅ Aktieliste (til Nordnet search)
 aktier = [
-"ALMB.CO","BAVA.CO","CARL-B.CO","COLO-B.CO","DANSKE.CO","DEMANT.CO",
-"DSV.CO","FLS.CO","GENMAB.CO","GN.CO","ISS.CO","JYSK.CO",
-"MAERSK-A.CO","MAERSK-B.CO","NKT.CO","NOVO-B.CO","NOVOZ.CO","ORSTED.CO",
-"PNDORA.CO","RBREW.CO","ROCK-B.CO","SYDB.CO","TRYG.CO","VWS.CO","ZEAL.CO",
-"ALK-B.CO","BIOPOR.CO","BO.CO","CHEMM.CO","DFDS.CO","GREENM.CO","HAFNI.CO",
-"MATAS.CO","NETC.CO","RING.CO","SPNO.CO","STG.CO","TOP.CO","TORM.CO"
+"ALMB","BAVA","CARL B","COLO B","DANSKE","DEMANT","DSV","FLS",
+"GENMAB","GN","ISS","JYSK","MAERSK A","MAERSK B","NKT",
+"NOVO B","NOVOZ","ORSTED","PNDORA","RBREW","ROCK B","SYDB",
+"TRYG","VWS","ZEAL","ALK B","BIOPOR","BO","CHEMM","DFDS",
+"GREENM","HAFNI","MATAS","NETC","RING","SPNO","STG","TOP","TORM"
 ]
 
 over_ema50 = []
@@ -30,19 +29,29 @@ def calculate_rsi(data, window=14):
     return 100 - (100 / (1 + rs))
 
 # ✅ Nordnet data
-def hent_data(aktie):
+def hent_data(navn):
     try:
-        symbol = aktie.replace(".CO", "")
-        url = f"https://www.nordnet.dk/api/2/main_search?query={symbol}"
+        url = f"https://www.nordnet.dk/api/2/main_search?query={navn}"
         r = requests.get(url)
         if r.status_code != 200:
             return None
 
         data = r.json()
+
         if "results" not in data or not data["results"]:
             return None
 
-        instrument_id = data["results"][0]["id"]
+        # ✅ vælg første aktie-resultat
+        instrument = None
+        for res in data["results"]:
+            if res.get("type") == "INSTRUMENT":
+                instrument = res
+                break
+
+        if instrument is None:
+            return None
+
+        instrument_id = instrument["id"]
 
         hist_url = f"https://www.nordnet.dk/api/2/ins/price/chart/{instrument_id}?resolution=day&from=0&to=9999999999"
         r2 = requests.get(hist_url)
@@ -50,6 +59,7 @@ def hent_data(aktie):
             return None
 
         hist = r2.json()
+
         if "candles" not in hist:
             return None
 
@@ -92,7 +102,7 @@ for aktie in aktier:
         if pd.isna(rsi_now):
             continue
 
-        navn = aktie.replace(".CO", "")
+        navn = aktie
 
         # ✅ RSI status
         if rsi_now < 30:
@@ -108,10 +118,10 @@ for aktie in aktier:
         else:
             macd_status = "Bearish"
 
-        # ✅ FILTER
+        # ✅ FILTER (over EMA50)
         if close_now > ema50_now:
             over_ema50.append(
-                f"{navn:<10} {round(close_now,1):>8} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
+                f"{navn:<12} {round(close_now,1):>8}   RSI: {rsi_status:<10}   MACD: {macd_status}"
             )
 
     except Exception as e:
@@ -124,9 +134,9 @@ PASSWORD = os.environ.get("EMAIL_PASSWORD")
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "📊 C25 EMA50 Status"
+msg['Subject'] = "📊 DK EMA50 Status (Nordnet)"
 
-# ✅ HTML
+# ✅ HTML output
 if over_ema50:
     html = "<h3>Aktier OVER EMA50</h3><pre>"
     for a in over_ema50:
