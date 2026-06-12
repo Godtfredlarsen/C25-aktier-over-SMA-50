@@ -2,7 +2,7 @@ name: C25 EMA Agent
 
 on:
   schedule:
-    - cron: "0 17 * * 1-5"   # ✅ 19:00 dansk tid (CEST)
+    - cron: "30 20 * * 1-5"   # ✅ 22:30 dansk tid (CEST)
   workflow_dispatch:
 
 jobs:
