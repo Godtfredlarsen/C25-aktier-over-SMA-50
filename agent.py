@@ -1,19 +1,47 @@
+import yfinance as yf
 import pandas as pd
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
-import requests
 
 print("Agent starter...")
 
-# ✅ Aktieliste
+# ✅ KORREKTE Yahoo Finance tickers
 aktier = [
-"ALMB","BAVA","CARL B","COLO B","DANSKE","DEMANT","DSV","FLS",
-"GENMAB","GN","ISS","JYSK","MAERSK A","MAERSK B","NKT",
-"NOVO B","NOVOZ","ORSTED","PNDORA","RBREW","ROCK B","SYDB",
-"TRYG","VWS","ZEAL","ALK B","BIOPOR","BO","CHEMM","DFDS",
-"GREENM","HAFNI","MATAS","NETC","RING","SPNO","STG","TOP","TORM"
+"ALMB.CO",
+"BAVA.CO",
+"CARL-B.CO",
+"COLO-B.CO",
+"DANSKE.CO",
+"DEMANT.CO",
+"DSV.CO",
+"FLS.CO",
+"GMAB.CO",
+"GN.CO",
+"ISS.CO",
+"MAERSK-A.CO",
+"MAERSK-B.CO",
+"NKT.CO",
+"NOVO-B.CO",
+"NOVOZ.CO",
+"ORSTED.CO",
+"PNDORA.CO",
+"RBREW.CO",
+"ROCK-B.CO",
+"SYDB.CO",
+"TRYG.CO",
+"VWS.CO",
+"ZEAL.CO",
+"ALK-B.CO",
+"DFDS.CO",
+"HAFNI.CO",
+"MATAS.CO",
+"NETC.CO",
+"RILBA.CO",   # Ringkjøbing Landbobank
+"STG.CO",
+"TOP.CO",
+"TORM.CO"
 ]
 
 over_ema50 = []
@@ -28,55 +56,14 @@ def calculate_rsi(data, window=14):
     rs = gain / loss
     return 100 - (100 / (1 + rs))
 
-# ✅ Nordnet scraping (FIXET)
-def hent_data(navn):
-    try:
-        url = f"https://www.nordnet.dk/api/2/main_search?query={navn}"
-        r = requests.get(url)
-        if r.status_code != 200:
-            return None
-
-        data = r.json()
-
-        if "results" not in data or not data["results"]:
-            return None
-
-        # ✅ Vælg KUN danske aktier (XCSE)
-        instrument = None
-        for res in data["results"]:
-            if res.get("type") == "INSTRUMENT" and res.get("exchange") == "XCSE":
-                instrument = res
-                break
-
-        if instrument is None:
-            return None
-
-        instrument_id = instrument["id"]
-
-        hist_url = f"https://www.nordnet.dk/api/2/ins/price/chart/{instrument_id}?resolution=day&from=0&to=9999999999"
-        r2 = requests.get(hist_url)
-        if r2.status_code != 200:
-            return None
-
-        hist = r2.json()
-
-        if "candles" not in hist:
-            return None
-
-        df = pd.DataFrame(hist["candles"])
-        df.columns = ["timestamp", "Open", "High", "Low", "Close", "Volume"]
-
-        return df
-
-    except:
-        return None
-
 # ✅ LOOP
 for aktie in aktier:
     try:
-        data = hent_data(aktie)
+        ticker = yf.Ticker(aktie)
+        data = ticker.history(period="1y")
 
-        if data is None or data.empty or len(data) < 100:
+        if data.empty or len(data) < 100:
+            print(f"Ingen data: {aktie}")
             continue
 
         # ✅ EMA
@@ -102,6 +89,8 @@ for aktie in aktier:
         if pd.isna(rsi_now):
             continue
 
+        navn = aktie.replace(".CO", "")
+
         # ✅ RSI status
         if rsi_now < 30:
             rsi_status = "Oversolgt"
@@ -119,7 +108,7 @@ for aktie in aktier:
         # ✅ FILTER
         if close_now > ema50_now:
             over_ema50.append(
-                f"{aktie:<12} {round(close_now,1):>8}   RSI: {rsi_status:<10}   MACD: {macd_status}"
+                f"{navn:<10} {round(close_now,1):>8} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
             )
 
     except Exception as e:
@@ -132,7 +121,7 @@ PASSWORD = os.environ.get("EMAIL_PASSWORD")
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "📊 DK EMA50 Status (Nordnet)"
+msg['Subject'] = "📊 DK EMA50 Status (Yahoo)"
 
 # ✅ HTML output
 if over_ema50:
@@ -158,3 +147,4 @@ if PASSWORD and PASSWORD.strip():
         print("MAIL FEJL:", e)
 else:
     print("PASSWORD PROBLEM")
+``
