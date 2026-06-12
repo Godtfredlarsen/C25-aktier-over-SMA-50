@@ -7,7 +7,7 @@ import requests
 
 print("Agent starter...")
 
-# ✅ Aktieliste (til Nordnet search)
+# ✅ Aktieliste
 aktier = [
 "ALMB","BAVA","CARL B","COLO B","DANSKE","DEMANT","DSV","FLS",
 "GENMAB","GN","ISS","JYSK","MAERSK A","MAERSK B","NKT",
@@ -28,7 +28,7 @@ def calculate_rsi(data, window=14):
     rs = gain / loss
     return 100 - (100 / (1 + rs))
 
-# ✅ Nordnet data
+# ✅ Nordnet scraping (FIXET)
 def hent_data(navn):
     try:
         url = f"https://www.nordnet.dk/api/2/main_search?query={navn}"
@@ -41,10 +41,10 @@ def hent_data(navn):
         if "results" not in data or not data["results"]:
             return None
 
-        # ✅ vælg første aktie-resultat
+        # ✅ Vælg KUN danske aktier (XCSE)
         instrument = None
         for res in data["results"]:
-            if res.get("type") == "INSTRUMENT":
+            if res.get("type") == "INSTRUMENT" and res.get("exchange") == "XCSE":
                 instrument = res
                 break
 
@@ -102,8 +102,6 @@ for aktie in aktier:
         if pd.isna(rsi_now):
             continue
 
-        navn = aktie
-
         # ✅ RSI status
         if rsi_now < 30:
             rsi_status = "Oversolgt"
@@ -118,10 +116,10 @@ for aktie in aktier:
         else:
             macd_status = "Bearish"
 
-        # ✅ FILTER (over EMA50)
+        # ✅ FILTER
         if close_now > ema50_now:
             over_ema50.append(
-                f"{navn:<12} {round(close_now,1):>8}   RSI: {rsi_status:<10}   MACD: {macd_status}"
+                f"{aktie:<12} {round(close_now,1):>8}   RSI: {rsi_status:<10}   MACD: {macd_status}"
             )
 
     except Exception as e:
