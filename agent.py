@@ -34,8 +34,6 @@ aktier = [
 "TRYG.CO",
 "VWS.CO",
 "ZEAL.CO"
-]
-[
 "ALK-B.CO",
 "BIOPOR.CO",
 "BO.CO",
