@@ -7,22 +7,22 @@ import os
 
 print("Agent starter...")
 
-# ✅ Yahoo tickers
+# ✅ Rettede Yahoo tickers
 aktier = [
 "ALMB.CO","BAVA.CO","CARL-B.CO","COLO-B.CO","DANSKE.CO","DEMANT.CO",
 "DSV.CO","FLS.CO","GMAB.CO","GN.CO","ISS.CO",
-"MAERSK-A.CO","MAERSK-B.CO","NKT.CO","NOVO-B.CO","NOVOZ.CO",
-"ORSTED.CO","PNDORA.CO","RBREW.CO","ROCK-B.CO",
+"MAERSK-A.CO","MAERSK-B.CO","NKT.CO","NOVO-B.CO",
+"NSIS-B.CO","ORSTED.CO","PNDORA.CO","RBREW.CO","ROCK-B.CO",
 "SYDB.CO","TRYG.CO","VWS.CO","ZEAL.CO",
-"ALK-B.CO","DFDS.CO","HAFNI.CO","MATAS.CO","NETC.CO",
-"RILBA.CO","STG.CO","TOP.CO","TORM.CO"
+"ALK-B.CO","DFDS.CO","HAFNI.OL","MATAS.CO","NETC.CO",
+"RILBA.CO","STG.CO","TOP.CO","TORM.OL"
 ]
 
 over_ema50 = []
 
 print("Analyserer...")
 
-# ✅ RSI funktion
+# ✅ RSI
 def calculate_rsi(data, window=14):
     delta = data['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window).mean()
@@ -63,7 +63,7 @@ for aktie in aktier:
         if pd.isna(rsi_now):
             continue
 
-        navn = aktie.replace(".CO", "")
+        navn = aktie.replace(".CO", "").replace(".OL", "")
 
         # ✅ RSI status
         if rsi_now < 30:
@@ -81,13 +81,9 @@ for aktie in aktier:
 
         # ✅ FILTER
         if close_now > ema50_now:
-            linje = (
-                f"{navn:<10} "
-                f"{round(close_now,1):>8} DKK   "
-                f"RSI: {rsi_status:<10}   "
-                f"MACD: {macd_status}"
+            over_ema50.append(
+                f"{navn:<12} {round(close_now,1):>8} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
             )
-            over_ema50.append(linje)
 
     except Exception as e:
         print("Fejl ved", aktie, ":", e)
@@ -101,7 +97,7 @@ msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
 msg['Subject'] = "📊 DK EMA50 Status (Yahoo)"
 
-# ✅ HTML output
+# ✅ HTML
 if over_ema50:
     html = "<h3>Aktier OVER EMA50</h3><pre>"
     for a in over_ema50:
