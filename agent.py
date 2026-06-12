@@ -9,13 +9,48 @@ print("Agent starter...")
 
 # ✅ C25 liste
 aktier = [
-    "ALK-B.CO", "AMBU-B.CO", "CARL-B.CO", "COLO-B.CO", "DNORD.CO",
-    "DEMANT.CO", "DSV.CO", "FLS.CO", "GMAB.CO", "GN.CO", "ISS.CO",
-    "MAERSK-A.CO", "MAERSK-B.CO", "NDA-DK.CO", "NOVO-B.CO",
-    "NSIS-B.CO", "ORSTED.CO", "PNDORA.CO", "ROCK-B.CO",
-    "TRYG.CO", "VWS.CO", "ZEAL.CO"
+"ALMB.CO",
+"BAVA.CO",
+"CARL-B.CO",
+"COLO-B.CO",
+"DANSKE.CO",
+"DEMANT.CO",
+"DSV.CO",
+"FLS.CO",
+"GENMAB.CO",
+"GN.CO",
+"ISS.CO",
+"JYSK.CO",
+"MAERSK-A.CO",
+"MAERSK-B.CO",
+"NKT.CO",
+"NOVO-B.CO",
+"NOVOZ.CO",
+"ORSTED.CO",
+"PNDORA.CO",
+"RBREW.CO",
+"ROCK-B.CO",
+"SYDB.CO",
+"TRYG.CO",
+"VWS.CO",
+"ZEAL.CO"
 ]
-
+[
+"ALK-B.CO",
+"BIOPOR.CO",
+"BO.CO",
+"CHEMM.CO",
+"DFDS.CO",
+"GREENM.CO",
+"HAFNI.CO",
+"MATAS.CO",
+"NETC.CO",
+"RING.CO",
+"SPNO.CO",
+"STG.CO",
+"TOP.CO",
+"TORM.CO"
+]
 over_ema50 = []
 
 print("Analyserer...")
