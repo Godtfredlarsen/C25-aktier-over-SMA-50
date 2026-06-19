@@ -23,6 +23,6 @@ jobs:
           pip install yfinance pandas
 
       - name: Run agent
-        run: python C25_LargeCap_OverSMA50.py
+        run: python C25_LargeCap_OverEMA100.py
         env:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
