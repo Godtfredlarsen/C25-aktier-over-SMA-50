@@ -7,22 +7,22 @@ import os
 
 print("Agent starter...")
 
-# ✅ Rettede Yahoo tickers
+# ✅ Yahoo tickers
 aktier = [
-"ALMB.CO","BAVA.CO","CARL-B.CO","COLO-B.CO","DANSKE.CO","DEMANT.CO",
-"DSV.CO","FLS.CO","GMAB.CO","GN.CO","ISS.CO",
-"MAERSK-A.CO","MAERSK-B.CO","NKT.CO","NOVO-B.CO",
-"NSIS-B.CO","ORSTED.CO","PNDORA.CO","RBREW.CO","ROCK-B.CO",
-"ALSYDB.CO","TRYG.CO","VWS.CO","ZEAL.CO",
-"ALK-B.CO","DFDS.CO","HAFNI.OL","MATAS.CO","NETC.CO",
-"RILBA.CO","STG.CO","TRMD-A.CO"
+    "ALMB.CO","BAVA.CO","CARL-B.CO","COLO-B.CO","DANSKE.CO","DEMANT.CO",
+    "DSV.CO","FLS.CO","GMAB.CO","GN.CO","ISS.CO",
+    "MAERSK-A.CO","MAERSK-B.CO","NKT.CO","NOVO-B.CO",
+    "NSIS-B.CO","ORSTED.CO","PNDORA.CO","RBREW.CO","ROCK-B.CO",
+    "ALSYDB.CO","TRYG.CO","VWS.CO","ZEAL.CO",
+    "ALK-B.CO","DFDS.CO","HAFNI.OL","MATAS.CO","NETC.CO",
+    "RILBA.CO","STG.CO","TRMD-A.CO"
 ]
 
-over_ema50 = []
+over_ema100 = []
 
 print("Analyserer...")
 
-# ✅ RSI
+# ✅ RSI funktion
 def calculate_rsi(data, window=14):
     delta = data['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window).mean()
@@ -40,8 +40,8 @@ for aktie in aktier:
             print("Ingen data:", aktie)
             continue
 
-        # ✅ EMA50
-        data['EMA50'] = data['Close'].ewm(span=50, adjust=False).mean()
+        # ✅ EMA100
+        data['EMA100'] = data['Close'].ewm(span=100, adjust=False).mean()
 
         # ✅ RSI
         data['RSI'] = calculate_rsi(data)
@@ -55,7 +55,7 @@ for aktie in aktier:
         last = data.tail(1)
 
         close_now = last['Close'].iloc[0]
-        ema50_now = last['EMA50'].iloc[0]
+        ema100_now = last['EMA100'].iloc[0]
         rsi_now = last['RSI'].iloc[0]
         macd_now = last['MACD'].iloc[0]
         signal_now = last['Signal'].iloc[0]
@@ -79,32 +79,32 @@ for aktie in aktier:
         else:
             macd_status = "Bearish"
 
-        # ✅ FILTER
-        if close_now > ema50_now:
-            over_ema50.append(
+        # ✅ FILTER (EMA100)
+        if close_now > ema100_now:
+            over_ema100.append(
                 f"{navn:<12} {round(close_now,1):>8} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
             )
 
     except Exception as e:
         print("Fejl ved", aktie, ":", e)
 
-# ✅ EMAIL
+# ✅ EMAIL OPSÆTNING
 MIN_EMAIL = "mgl@godtfredlarsen.com"
 PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "📊 DK EMA50 Status (Yahoo)"
+msg['Subject'] = "📊 DK EMA100 Status (Yahoo)"
 
 # ✅ HTML
-if over_ema50:
-    html = "<h3>Aktier OVER EMA50</h3><pre>"
-    for a in over_ema50:
+if over_ema100:
+    html = "<h3>Aktier OVER EMA100</h3><pre>"
+    for a in over_ema100:
         html += a + "\n"
     html += "</pre>"
 else:
-    html = "<p>Ingen aktier er over EMA50.</p>"
+    html = "<p>Ingen aktier er over EMA100.</p>"
 
 msg.attach(MIMEText(html, 'html'))
 
