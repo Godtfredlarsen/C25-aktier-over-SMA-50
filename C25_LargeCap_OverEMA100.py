@@ -18,7 +18,7 @@ aktier = [
     "RILBA.CO","STG.CO","TRMD-A.CO"
 ]
 
-over_ema100 = []
+trend_aktier = []
 
 print("Analyserer...")
 
@@ -36,11 +36,13 @@ for aktie in aktier:
         ticker = yf.Ticker(aktie)
         data = ticker.history(period="1y")
 
-        if data.empty or len(data) < 100:
+        if data.empty or len(data) < 120:
             print("Ingen data:", aktie)
             continue
 
-        # ✅ EMA100
+        # ✅ EMA'er
+        data['EMA30'] = data['Close'].ewm(span=30, adjust=False).mean()
+        data['EMA50'] = data['Close'].ewm(span=50, adjust=False).mean()
         data['EMA100'] = data['Close'].ewm(span=100, adjust=False).mean()
 
         # ✅ RSI
@@ -55,7 +57,10 @@ for aktie in aktier:
         last = data.tail(1)
 
         close_now = last['Close'].iloc[0]
+        ema30_now = last['EMA30'].iloc[0]
+        ema50_now = last['EMA50'].iloc[0]
         ema100_now = last['EMA100'].iloc[0]
+
         rsi_now = last['RSI'].iloc[0]
         macd_now = last['MACD'].iloc[0]
         signal_now = last['Signal'].iloc[0]
@@ -79,9 +84,12 @@ for aktie in aktier:
         else:
             macd_status = "Bearish"
 
-        # ✅ FILTER (EMA100)
-        if close_now > ema100_now:
-            over_ema100.append(
+        # ✅ TREND FILTER (det vigtige)
+        if (close_now > ema30_now and
+            ema30_now > ema50_now and
+            ema50_now > ema100_now):
+
+            trend_aktier.append(
                 f"{navn:<12} {round(close_now,1):>8} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
             )
 
@@ -95,16 +103,16 @@ PASSWORD = os.environ.get("EMAIL_PASSWORD")
 msg = MIMEMultipart()
 msg['From'] = MIN_EMAIL
 msg['To'] = MIN_EMAIL
-msg['Subject'] = "📊 DK EMA100 Status (Yahoo)"
+msg['Subject'] = "📈 Stærk trend (EMA30>EMA50>EMA100)"
 
 # ✅ HTML
-if over_ema100:
-    html = "<h3>Aktier OVER EMA100</h3><pre>"
-    for a in over_ema100:
+if trend_aktier:
+    html = "<h3>Aktier i stærk optrend</h3><pre>"
+    for a in trend_aktier:
         html += a + "\n"
     html += "</pre>"
 else:
-    html = "<p>Ingen aktier er over EMA100.</p>"
+    html = "<p>Ingen aktier opfylder trend kriterierne.</p>"
 
 msg.attach(MIMEText(html, 'html'))
 
