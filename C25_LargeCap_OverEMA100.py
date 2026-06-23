@@ -54,16 +54,17 @@ for aktie in aktier:
         data['MACD'] = ema12 - ema26
         data['Signal'] = data['MACD'].ewm(span=9, adjust=False).mean()
 
-        last = data.tail(1)
+        # ✅ 🔥 FIX 1: Brug stabilt datapunkt (ikke intraday / halv data)
+        last = data.iloc[-2]
 
-        close_now = last['Close'].iloc[0]
-        ema30_now = last['EMA30'].iloc[0]
-        ema50_now = last['EMA50'].iloc[0]
-        ema100_now = last['EMA100'].iloc[0]
+        close_now = last['Close']
+        ema30_now = last['EMA30']
+        ema50_now = last['EMA50']
+        ema100_now = last['EMA100']
 
-        rsi_now = last['RSI'].iloc[0]
-        macd_now = last['MACD'].iloc[0]
-        signal_now = last['Signal'].iloc[0]
+        rsi_now = last['RSI']
+        macd_now = last['MACD']
+        signal_now = last['Signal']
 
         if pd.isna(rsi_now):
             continue
@@ -84,14 +85,24 @@ for aktie in aktier:
         else:
             macd_status = "Bearish"
 
-        # ✅ TREND FILTER (det vigtige)
-        if (close_now > ema30_now and
+        # ✅ 🔥 FIX 2: tolerance så vi ikke fejler på små forskelle
+        if (
+            close_now > ema30_now * 0.995 and
             ema30_now > ema50_now and
-            ema50_now > ema100_now):
+            ema50_now > ema100_now
+        ):
 
             trend_aktier.append(
-                f"{navn:<12} {round(close_now,1):>8} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
+                f"{navn:<12} {close_now:>8.1f} DKK   RSI: {rsi_status:<10}   MACD: {macd_status}"
             )
+
+        # ✅ 🔍 DEBUG (så du kan se hvorfor en aktie evt. ryger ud)
+        if aktie == "DANSKE.CO":
+            print("\nDEBUG DANSKE:")
+            print(f"Close: {close_now:.2f}")
+            print(f"EMA30: {ema30_now:.2f}")
+            print(f"EMA50: {ema50_now:.2f}")
+            print(f"EMA100: {ema100_now:.2f}")
 
     except Exception as e:
         print("Fejl ved", aktie, ":", e)
